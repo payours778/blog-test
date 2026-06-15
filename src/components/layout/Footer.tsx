@@ -7,7 +7,7 @@ export function Footer() {
     <footer className="relative z-10 w-full py-8 px-4 border-t border-white/10 bg-white/30 dark:bg-slate-900/50 backdrop-blur-md">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="text-sm text-slate-600 dark:text-slate-400">
-          © {currentYear} YourName. All rights reserved.
+          © {currentYear} Payours. All rights reserved.
         </div>
 
         <div className="flex items-center gap-6 text-sm">

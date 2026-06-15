@@ -1,9 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+
+const START_DATE = new Date("2026-06-15");
+
+function calculateRunningDays(): number {
+  const now = new Date();
+  const diffTime = now.getTime() - START_DATE.getTime();
+  return Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+}
 
 export function FooterInfo() {
   const [currentTime, setCurrentTime] = useState("");
+  const [runningDays, setRunningDays] = useState(calculateRunningDays);
+
+  const timeTimerRef = useRef<number | null>(null);
+  const dayTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     const updateTime = () => {
@@ -15,8 +27,32 @@ export function FooterInfo() {
     };
 
     updateTime();
-    const timer = setInterval(updateTime, 1000);
-    return () => clearInterval(timer);
+    timeTimerRef.current = window.setInterval(updateTime, 1000);
+
+    return () => {
+      if (timeTimerRef.current) clearInterval(timeTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setHours(24, 0, 0, 0);
+    const delay = midnight.getTime() - now.getTime();
+
+    const updateDayAtMidnight = () => {
+      setRunningDays(calculateRunningDays());
+
+      dayTimerRef.current = window.setTimeout(() => {
+        updateDayAtMidnight();
+      }, 24 * 60 * 60 * 1000);
+    };
+
+    dayTimerRef.current = window.setTimeout(updateDayAtMidnight, delay);
+
+    return () => {
+      if (dayTimerRef.current) clearTimeout(dayTimerRef.current);
+    };
   }, []);
 
   return (
@@ -28,7 +64,7 @@ export function FooterInfo() {
           </div>
           <div className="text-sm text-slate-600 dark:text-slate-300">
             <span className="text-green-500 mr-1">●</span>
-            系统已稳定运行：<span className="font-bold text-indigo-600 dark:text-indigo-400">65天</span>
+            系统已稳定运行：<span className="font-bold text-indigo-600 dark:text-indigo-400">{runningDays}天</span>
           </div>
         </div>
         <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-300">
@@ -52,7 +88,7 @@ export function FooterInfo() {
           </div>
         </div>
         <div className="text-xs text-slate-500 dark:text-slate-400">
-          赣ICP备 20260240号
+          暂未备案
         </div>
       </div>
     </div>
