@@ -1,2 +1,33 @@
-// 后端入口文件
-// TODO: 实现 Express 服务器
+import express from 'express';
+import cors from 'cors';
+import postsRouter from './routes/posts';
+import momentsRouter from './routes/moments';
+import getDb from './db';
+
+const app = express();
+const PORT = 3001;
+
+app.use(cors());
+app.use(express.json());
+
+app.use('/api/posts', postsRouter);
+app.use('/api/moments', momentsRouter);
+
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Backend is running' });
+});
+
+async function startServer() {
+  try {
+    await getDb();
+    console.log('Database initialized successfully');
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to initialize database:', error);
+    process.exit(1);
+  }
+}
+
+startServer();

@@ -1,0 +1,34 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const cors_1 = __importDefault(require("cors"));
+const posts_1 = __importDefault(require("./routes/posts"));
+const moments_1 = __importDefault(require("./routes/moments"));
+const db_1 = __importDefault(require("./db"));
+const app = (0, express_1.default)();
+const PORT = 3001;
+app.use((0, cors_1.default)());
+app.use(express_1.default.json());
+app.use('/api/posts', posts_1.default);
+app.use('/api/moments', moments_1.default);
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', message: 'Backend is running' });
+});
+async function startServer() {
+    try {
+        await (0, db_1.default)();
+        console.log('Database initialized successfully');
+        app.listen(PORT, () => {
+            console.log(`Server running on http://localhost:${PORT}`);
+        });
+    }
+    catch (error) {
+        console.error('Failed to initialize database:', error);
+        process.exit(1);
+    }
+}
+startServer();
+//# sourceMappingURL=app.js.map
