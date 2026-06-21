@@ -1,7 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+
+interface ApiMoment {
+  id: number;
+  content: string;
+  images: string[];
+  likes: number;
+  created_at: string;
+}
 
 interface Moment {
   id: number;
@@ -13,95 +21,37 @@ interface Moment {
   likes: number;
 }
 
-const moments: Moment[] = [
-  {
-    id: 1,
-    username: "Payours",
-    content: "这是一条测试消息",
-    date: "2026-05-18",
-    location: "江西省 南昌市 高新区",
-    images: [
-      "https://aka.doubaocdn.com/s/qRVc1wVANu",
-      "https://aka.doubaocdn.com/s/qRVc1wVANu",
-      "https://aka.doubaocdn.com/s/qRVc1wVANu",
-    ],
-    likes: 42,
-  },
-  {
-    id: 2,
-    username: "Payours",
-    content: "做了一个干员休息处，动画都是自己扣的，累死了，后面看看想想怎么完善",
-    date: "2026-05-15",
-    location: "江西省 南昌市 高新区",
-    likes: 28,
-  },
-  {
-    id: 3,
-    username: "Payours",
-    content: "今天更新了奇怪的灵镜系统，带魔法炼金和帝江号。目前帝江号还没完善，后面我想再加个升级系统，激励自己写博客维护网站，但是我感觉我开源的话可能不是很多人喜欢这种升级系统。所以我打算再写一个在设置里面能够自己决定是否开启的选项。",
-    date: "2026-05-13",
-    location: "江西省 南昌市 高新区",
-    images: ["https://aka.doubaocdn.com/s/qRVc1wVANu"],
-    likes: 35,
-  },
-  {
-    id: 4,
-    username: "Payours",
-    content: "今天也要好好睡觉呀",
-    date: "2026-05-12",
-    location: "江西省 南昌市 高新区",
-    likes: 56,
-  },
-  {
-    id: 5,
-    username: "Payours",
-    content: "今天更新了博客对移动端的适配😢",
-    date: "2026-05-09",
-    location: "江西省 南昌市 高新区",
-    likes: 23,
-  },
-  {
-    id: 6,
-    username: "Payours",
-    content: "终于把博客从 Hexo 迁移到 Next.js 了！感觉打开了新世界的大门 🚀",
-    date: "2026-05-05",
-    location: "南昌市",
-    images: [
-      "https://aka.doubaocdn.com/s/GEt21wVANu",
-      "https://aka.doubaocdn.com/s/GEt21wVANu",
-      "https://aka.doubaocdn.com/s/GEt21wVANu",
-    ],
-    likes: 89,
-  },
-  {
-    id: 7,
-    username: "Payours",
-    content: "周末尝试了新的摄影技巧，拍了一些不错的照片，整理一下发上来~",
-    date: "2026-05-03",
-    location: "南昌市",
-    images: [
-      "https://aka.doubaocdn.com/s/qRVc1wVANu",
-      "https://aka.doubaocdn.com/s/qRVc1wVANu",
-      "https://aka.doubaocdn.com/s/qRVc1wVANu",
-      "https://aka.doubaocdn.com/s/qRVc1wVANu",
-    ],
-    likes: 67,
-  },
-  {
-    id: 8,
-    username: "Payours",
-    content: "学习了新的技术栈，感觉收获满满",
-    date: "2026-04-28",
-    location: "江西省",
-    likes: 44,
-  },
-];
+const mapMoment = (m: ApiMoment): Moment => ({
+  id: m.id,
+  username: "Payours",
+  content: m.content,
+  date: m.created_at,
+  images: m.images && m.images.length > 0 ? m.images : undefined,
+  likes: m.likes,
+});
 
 type SortType = "latest" | "earliest";
 
 export default function MomentsPage() {
+  const [moments, setMoments] = useState<Moment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [sort, setSort] = useState<SortType>("latest");
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    const fetchMoments = async () => {
+      setIsLoading(true);
+      try {
+        const res = await fetch("http://localhost:3001/api/moments");
+        const data = await res.json();
+        setMoments((data.moments || []).map(mapMoment));
+      } catch (error) {
+        console.error("获取说说失败:", error);
+      }
+      setIsLoading(false);
+    };
+    fetchMoments();
+  }, []);
 
   const sortedMoments = [...moments].sort((a, b) => {
     if (sort === "latest") {
@@ -209,6 +159,16 @@ export default function MomentsPage() {
 
       <section className="px-4 pb-16">
         <div className="max-w-5xl mx-auto">
+          {isLoading ? (
+            <div className="text-center py-16">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500 mx-auto"></div>
+            </div>
+          ) : filteredMoments.length === 0 ? (
+            <div className="text-center py-16 text-slate-500 dark:text-slate-400">
+              <div className="text-5xl mb-4">💬</div>
+              <p>{searchQuery ? "没有找到相关的说说" : "暂无说说"}</p>
+            </div>
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-6">
               {leftColumn.map((moment) => (
@@ -378,6 +338,7 @@ export default function MomentsPage() {
               ))}
             </div>
           </div>
+          )}
         </div>
       </section>
     </div>

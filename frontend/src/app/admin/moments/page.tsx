@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
 const EMOJI_LIST = [
@@ -27,7 +28,24 @@ export default function AdminMoments() {
   const [currentMoment, setCurrentMoment] = useState<Moment | null>(null);
   const [formData, setFormData] = useState({ content: "", images: [""] });
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!showEmojiPicker) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
+        setShowEmojiPicker(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showEmojiPicker]);
 
   const insertEmoji = (emoji: string) => {
     const textarea = textareaRef.current;
@@ -218,8 +236,8 @@ export default function AdminMoments() {
         </div>
       )}
 
-      {showCreateModal && (
-        <div className="fixed inset-x-0 top-32 bottom-0 flex items-center justify-center z-[60] pointer-events-none">
+      {mounted && showCreateModal && createPortal(
+        <div className="fixed inset-0 flex items-start justify-center pt-40 pb-8 px-4 overflow-y-auto z-[60] pointer-events-none">
           <div className="pointer-events-auto bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-xl p-6 w-full max-w-md border border-white/20 dark:border-white/10 shadow-lg">
             <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-4">
               发布说说
@@ -244,7 +262,7 @@ export default function AdminMoments() {
                   placeholder="写下你想说的..."
                   required
                 />
-                <div className="relative mt-2">
+                <div ref={emojiPickerRef} className="relative mt-2">
                   <button
                     type="button"
                     onClick={() => setShowEmojiPicker(!showEmojiPicker)}
@@ -327,11 +345,12 @@ export default function AdminMoments() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {showEditModal && currentMoment && (
-        <div className="fixed inset-x-0 top-32 bottom-0 flex items-center justify-center z-[60] pointer-events-none">
+      {mounted && showEditModal && currentMoment && createPortal(
+        <div className="fixed inset-0 flex items-start justify-center pt-40 pb-8 px-4 overflow-y-auto z-[60] pointer-events-none">
           <div className="pointer-events-auto bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-xl p-6 w-full max-w-md border border-white/20 dark:border-white/10 shadow-lg">
             <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-4">
               编辑说说
@@ -355,7 +374,7 @@ export default function AdminMoments() {
                   rows={4}
                   required
                 />
-                <div className="relative mt-2">
+                <div ref={emojiPickerRef} className="relative mt-2">
                   <button
                     type="button"
                     onClick={() => setShowEmojiPicker(!showEmojiPicker)}
@@ -442,7 +461,8 @@ export default function AdminMoments() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

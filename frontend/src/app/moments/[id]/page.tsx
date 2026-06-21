@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -12,90 +13,6 @@ interface Moment {
   images?: string[];
   likes: number;
 }
-
-const moments: Moment[] = [
-  {
-    id: 1,
-    username: "Payours",
-    content: "这次新更新了等级系统和炼金实验室还有帝江号 还修复了一些bug。后续大更新可能就没那么快了。到时候在b站做个视频说明一下更新内容。",
-    date: "2026-05-18",
-    location: "江西省 南昌市 高新区",
-    images: [
-      "https://aka.doubaocdn.com/s/qRVc1wVANu",
-      "https://aka.doubaocdn.com/s/qRVc1wVANu",
-      "https://aka.doubaocdn.com/s/qRVc1wVANu",
-    ],
-    likes: 42,
-  },
-  {
-    id: 2,
-    username: "Payours",
-    content: "做了一个干员休息处，动画都是自己扣的，累死了，后面看看想想怎么完善",
-    date: "2026-05-15",
-    location: "江西省 南昌市 高新区",
-    likes: 28,
-  },
-  {
-    id: 3,
-    username: "Payours",
-    content: "今天更新了奇怪的灵镜系统，带魔法炼金和帝江号。目前帝江号还没完善，后面我想再加个升级系统，激励自己写博客维护网站，但是我感觉我开源的话可能不是很多人喜欢这种升级系统。所以我打算再写一个在设置里面能够自己决定是否开启的选项。",
-    date: "2026-05-13",
-    location: "江西省 南昌市 高新区",
-    images: ["https://aka.doubaocdn.com/s/qRVc1wVANu"],
-    likes: 35,
-  },
-  {
-    id: 4,
-    username: "Payours",
-    content: "今天也要好好睡觉呀",
-    date: "2026-05-12",
-    location: "江西省 南昌市 高新区",
-    likes: 56,
-  },
-  {
-    id: 5,
-    username: "Payours",
-    content: "今天更新了博客对移动端的适配😢",
-    date: "2026-05-09",
-    location: "江西省 南昌市 高新区",
-    likes: 23,
-  },
-  {
-    id: 6,
-    username: "Payours",
-    content: "终于把博客从 Hexo 迁移到 Next.js 了！感觉打开了新世界的大门 🚀",
-    date: "2026-05-05",
-    location: "南昌市",
-    images: [
-      "https://aka.doubaocdn.com/s/GEt21wVANu",
-      "https://aka.doubaocdn.com/s/GEt21wVANu",
-      "https://aka.doubaocdn.com/s/GEt21wVANu",
-    ],
-    likes: 89,
-  },
-  {
-    id: 7,
-    username: "Payours",
-    content: "周末尝试了新的摄影技巧，拍了一些不错的照片，整理一下发上来~",
-    date: "2026-05-03",
-    location: "南昌市",
-    images: [
-      "https://aka.doubaocdn.com/s/qRVc1wVANu",
-      "https://aka.doubaocdn.com/s/qRVc1wVANu",
-      "https://aka.doubaocdn.com/s/qRVc1wVANu",
-      "https://aka.doubaocdn.com/s/qRVc1wVANu",
-    ],
-    likes: 67,
-  },
-  {
-    id: 8,
-    username: "Payours",
-    content: "学习了新的技术栈，感觉收获满满",
-    date: "2026-04-28",
-    location: "江西省",
-    likes: 44,
-  },
-];
 
 const formatDate = (dateStr: string) => {
   const date = new Date(dateStr);
@@ -111,7 +28,63 @@ export default function MomentDetailPage() {
   const params = useParams();
   const router = useRouter();
   const momentId = parseInt(params.id as string);
-  const moment = moments.find((m) => m.id === momentId);
+
+  const [moment, setMoment] = useState<Moment | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLiking, setIsLiking] = useState(false);
+
+  useEffect(() => {
+    const fetchMoment = async () => {
+      setIsLoading(true);
+      try {
+        const res = await fetch(`http://localhost:3001/api/moments/${momentId}`);
+        if (res.ok) {
+          const data = await res.json();
+          const m = data.moment;
+          setMoment({
+            id: m.id,
+            username: "Payours",
+            content: m.content,
+            date: m.created_at,
+            images: m.images && m.images.length > 0 ? m.images : undefined,
+            likes: m.likes,
+          });
+        } else {
+          setMoment(null);
+        }
+      } catch (error) {
+        console.error("获取说说详情失败:", error);
+        setMoment(null);
+      }
+      setIsLoading(false);
+    };
+    if (!isNaN(momentId)) fetchMoment();
+  }, [momentId]);
+
+  const handleLike = async () => {
+    if (isLiking || !moment) return;
+    setIsLiking(true);
+    try {
+      const res = await fetch(`http://localhost:3001/api/moments/${momentId}/like`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMoment((prev) => (prev ? { ...prev, likes: data.moment.likes } : prev));
+      }
+    } catch (error) {
+      console.error("点赞失败:", error);
+    }
+    setIsLiking(false);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
 
   if (!moment) {
     return (
@@ -207,7 +180,7 @@ export default function MomentDetailPage() {
             )}
 
             <div className="flex items-center justify-between pt-6 border-t border-slate-200/50 dark:border-slate-700/50">
-              <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-pink-50 dark:bg-pink-900/30 text-pink-500 dark:text-pink-400 hover:bg-pink-100 dark:hover:bg-pink-900/50 transition-colors">
+              <button onClick={handleLike} disabled={isLiking} className="flex items-center gap-2 px-4 py-2 rounded-full bg-pink-50 dark:bg-pink-900/30 text-pink-500 dark:text-pink-400 hover:bg-pink-100 dark:hover:bg-pink-900/50 transition-colors disabled:opacity-60">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                 </svg>
